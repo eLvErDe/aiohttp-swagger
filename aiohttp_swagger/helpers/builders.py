@@ -40,7 +40,12 @@ def _build_doc_from_func_doc(route):
 
     out = {}
 
-    if issubclass(route.handler, web.View) and route.method == METH_ANY:
+    try:
+        handler_is_a_view = issubclass(route.handler, web.View)
+    except TypeError:
+        handler_is_a_view = False
+
+    if handler_is_a_view and route.method == METH_ANY:
         method_names = {
             attr for attr in dir(route.handler) \
             if attr.upper() in METH_ALL
@@ -50,7 +55,6 @@ def _build_doc_from_func_doc(route):
             if method.__doc__ is not None and "---" in method.__doc__:
                 end_point_doc = method.__doc__.splitlines()
                 out.update(_extract_swagger_docs(end_point_doc, method=method_name))
-
     else:
         try:
             end_point_doc = route.handler.__doc__.splitlines()
@@ -59,6 +63,7 @@ def _build_doc_from_func_doc(route):
 
         method_name = route.method.lower()
         out.update(_extract_swagger_docs(end_point_doc, method=method_name))
+
     return out
 
 def generate_doc_from_each_end_point(
