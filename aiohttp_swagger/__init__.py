@@ -85,8 +85,9 @@ def setup_swagger(app: web.Application,
     if not disable_ui:
         # Add API routes for UI
         app.router.add_route('GET', _swagger_url, _swagger_home_func)
-        app.router.add_route('GET', "{}/".format(_base_swagger_url),
-                            _swagger_home_func)
+        if _swagger_url != "/":
+            app.router.add_route('GET', "{}/".format(_base_swagger_url),
+                                _swagger_home_func)
 
         # Set statics
         statics_path = '{}/swagger_static'.format(_base_swagger_url)
