@@ -58,6 +58,16 @@ def _build_doc_from_func_doc(route):
                 end_point_doc = method.__doc__.splitlines()
                 endpoints.append((end_point_doc, method_name))
 
+    elif route.handler.__module__ == "prometheus_async.aio.web" \
+        and route.handler.__name__ == "server_stats" \
+        and (route.handler.__doc__ is None or "---" not in route.handler.__doc__):
+
+        # Override prometheus_async __doc__
+
+        end_point_doc = '---\ndescription: Prometheus metrics\ntags:\n- Prometheus\nproduces:\n- text/plain\nresponses:\n    "200":\n        description: success'.splitlines()
+
+        endpoints.append((end_point_doc, route.method.lower()))
+
     else:
         if route.handler.__doc__:
             end_point_doc = route.handler.__doc__.splitlines()
