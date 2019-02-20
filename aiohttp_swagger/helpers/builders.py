@@ -38,6 +38,8 @@ def _extract_swagger_docs(end_point_doc, method="get"):
 
 def _build_doc_from_func_doc(route):
 
+    filter = ["head"]
+    endpoints = []
     out = {}
 
     try:
@@ -54,15 +56,16 @@ def _build_doc_from_func_doc(route):
             method = getattr(route.handler, method_name)
             if method.__doc__ is not None and "---" in method.__doc__:
                 end_point_doc = method.__doc__.splitlines()
-                out.update(_extract_swagger_docs(end_point_doc, method=method_name))
-    else:
-        try:
-            end_point_doc = route.handler.__doc__.splitlines()
-        except AttributeError:
-            return {}
+                endpoints.append((end_point_doc, method_name))
 
-        method_name = route.method.lower()
-        out.update(_extract_swagger_docs(end_point_doc, method=method_name))
+    else:
+        if route.handler.__doc__:
+            end_point_doc = route.handler.__doc__.splitlines()
+            endpoints.append((end_point_doc, route.method.lower()))
+
+    for end_point_doc, method_name in endpoints:
+        if method_name not in filter:
+            out.update(_extract_swagger_docs(end_point_doc, method=method_name))
 
     return out
 
