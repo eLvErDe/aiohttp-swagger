@@ -38,9 +38,16 @@ def _extract_swagger_docs(end_point_doc, method="get"):
 
 def _build_doc_from_func_doc(route):
 
+    filter = ["head"]
+    endpoints = []
     out = {}
 
-    if issubclass(route.handler, web.View) and route.method == METH_ANY:
+    try:
+        handler_is_a_view = issubclass(route.handler, web.View)
+    except TypeError:
+        handler_is_a_view = False
+
+    if handler_is_a_view and route.method == METH_ANY:
         method_names = {
             attr for attr in dir(route.handler) \
             if attr.upper() in METH_ALL
@@ -49,16 +56,27 @@ def _build_doc_from_func_doc(route):
             method = getattr(route.handler, method_name)
             if method.__doc__ is not None and "---" in method.__doc__:
                 end_point_doc = method.__doc__.splitlines()
-                out.update(_extract_swagger_docs(end_point_doc, method=method_name))
+                endpoints.append((end_point_doc, method_name))
+
+    elif route.handler.__module__ == "prometheus_async.aio.web" \
+        and route.handler.__name__ == "server_stats" \
+        and (route.handler.__doc__ is None or "---" not in route.handler.__doc__):
+
+        # Override prometheus_async __doc__
+
+        end_point_doc = '---\ndescription: Prometheus metrics\ntags:\n- Prometheus\nproduces:\n- text/plain\nresponses:\n    "200":\n        description: success'.splitlines()
+
+        endpoints.append((end_point_doc, route.method.lower()))
 
     else:
-        try:
+        if route.handler.__doc__:
             end_point_doc = route.handler.__doc__.splitlines()
-        except AttributeError:
-            return {}
+            endpoints.append((end_point_doc, route.method.lower()))
 
-        method_name = route.method.lower()
-        out.update(_extract_swagger_docs(end_point_doc, method=method_name))
+    for end_point_doc, method_name in endpoints:
+        if method_name not in filter:
+            out.update(_extract_swagger_docs(end_point_doc, method=method_name))
+
     return out
 
 def generate_doc_from_each_end_point(

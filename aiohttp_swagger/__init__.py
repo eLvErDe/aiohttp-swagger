@@ -48,7 +48,8 @@ def setup_swagger(app: web.Application,
                   swagger_def_decor: FunctionType = None,
                   swagger_info: dict = None,
                   bundle_params: dict = None,
-                  security_definitions: dict = None):
+                  security_definitions: dict = None,
+                  disable_ui: bool = False):
     _swagger_url = ("/{}".format(swagger_url)
                     if not swagger_url.startswith("/")
                     else swagger_url)
@@ -77,28 +78,32 @@ def setup_swagger(app: web.Application,
     if swagger_def_decor is not None:
         _swagger_def_func = swagger_def_decor(_swagger_def)
 
-    # Add API routes
-    app.router.add_route('GET', _swagger_url, _swagger_home_func)
-    app.router.add_route('GET', "{}/".format(_base_swagger_url),
-                         _swagger_home_func)
+    # Swagger definition (add API route and configure app)
     app.router.add_route('GET', _swagger_def_url, _swagger_def_func)
-
-    # Set statics
-    statics_path = '{}/swagger_static'.format(_base_swagger_url)
-    app.router.add_static(statics_path, STATIC_PATH)
-
-    # --------------------------------------------------------------------------
-    # Build templates
-    # --------------------------------------------------------------------------
     app["SWAGGER_DEF_CONTENT"] = swagger_info
-    with open(join(STATIC_PATH, "index.html"), "r") as f:
-        bundle_params_str = json.dumps(bundle_params or {})
-        app["SWAGGER_TEMPLATE_CONTENT"] = (
-            f.read()
-            .replace("##SWAGGER_CONFIG##", _swagger_def_url)
-            .replace("##STATIC_PATH##", statics_path)
-            .replace("##BUNDLE_PARAMS##", bundle_params_str)
-        )
+
+    if not disable_ui:
+        # Add API routes for UI
+        app.router.add_route('GET', _swagger_url, _swagger_home_func)
+        if _swagger_url != "/":
+            app.router.add_route('GET', "{}/".format(_base_swagger_url),
+                                _swagger_home_func)
+
+        # Set statics
+        statics_path = '{}/swagger_static'.format(_base_swagger_url)
+        app.router.add_static(statics_path, STATIC_PATH)
+
+        # --------------------------------------------------------------------------
+        # Build templates
+        # --------------------------------------------------------------------------
+        with open(join(STATIC_PATH, "index.html"), "r") as f:
+            bundle_params_str = json.dumps(bundle_params or {})
+            app["SWAGGER_TEMPLATE_CONTENT"] = (
+                f.read()
+                .replace("##SWAGGER_CONFIG##", _swagger_def_url)
+                .replace("##STATIC_PATH##", statics_path)
+                .replace("##BUNDLE_PARAMS##", bundle_params_str)
+            )
 
 
 __all__ = ("setup_swagger", "swagger_path")
