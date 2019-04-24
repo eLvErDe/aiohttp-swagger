@@ -74,8 +74,13 @@ def generate_doc_from_each_end_point(
         api_version: str = "1.0.0",
         title: str = "Swagger API",
         contact: str = "",
+        schemes: list = None,
         security_definitions: dict = None,
         definitions: str = None):
+
+    if schemes is None:
+        schemes = ["http", "https"]
+
     # Clean description
     _start_desc = 0
     for i, word in enumerate(description):
@@ -105,6 +110,7 @@ def generate_doc_from_each_end_point(
                 title=title,
                 contact=contact,
                 base_path=api_base_url,
+                schemes=schemes,
                 security_definitions=security_definitions,
                 definitions=definitions)
         )
